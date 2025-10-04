@@ -1,6 +1,10 @@
 const express = require("express");
-
 const router = express.Router();
+const todos = [
+  { id: 0, title: "todo1" },
+  { id: 1, title: "todo2" },
+  { id: 2, title: "todo3" },
+];
 
 router.get("/Users-product", (req, res, next) => {
   /*  console.log("hello from users"); */
@@ -10,8 +14,6 @@ router.get("/Users-product", (req, res, next) => {
 });
 
 router.post("/product", (req, res, next) => {
-  // app.use for every html method,
-  // app.post just for post methods
   console.log(req.body);
 
   res.redirect("/");

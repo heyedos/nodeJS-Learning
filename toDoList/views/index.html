@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Todo App</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 30px auto;
+      }
+      h1 {
+        text-align: center;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        padding: 8px;
+        margin: 5px 0;
+        background: #f2f2f2;
+        display: flex;
+        justify-content: space-between;
+      }
+      button {
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Todo List</h1>
+
+    <form id="todoForm">
+      <input type="text" id="title" placeholder="Yeni todo" required />
+      <button type="submit">Ekle</button>
+    </form>
+
+    <ul id="todoList"></ul>
+
+    <script>
+      const apiUrl = "http://localhost:3000/todos";
+      const todoList = document.getElementById("todoList");
+      const form = document.getElementById("todoForm");
+      const titleInput = document.getElementById("title");
+
+      // Listele
+      async function getTodos() {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        renderTodos(data);
+      }
+
+      // Ekle
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = titleInput.value;
+
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+
+        if (res.ok) {
+          titleInput.value = "";
+          getTodos();
+        }
+      });
+
+      // Güncelle
+      async function updateTodo(id) {
+        const newTitle = prompt("Yeni başlık:");
+        if (!newTitle) return;
+
+        await fetch(`${apiUrl}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: newTitle }),
+        });
+        getTodos();
+      }
+
+      // Sil
+      async function deleteTodo(id) {
+        await fetch(`${apiUrl}/${id}`, {
+          method: "DELETE",
+        });
+        getTodos();
+      }
+
+      // Render
+      function renderTodos(todos) {
+        todoList.innerHTML = "";
+        todos.forEach((todo) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+          <span>${todo.title}</span>
+          <div>
+            <button onclick="updateTodo(${todo.id})">Güncelle</button>
+            <button onclick="deleteTodo(${todo.id})">Sil</button>
+          </div>
+        `;
+          todoList.appendChild(li);
+        });
+      }
+
+      // İlk yükleme
+      getTodos();
+    </script>
+  </body>
+</html>
