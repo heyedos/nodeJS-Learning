@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Contacts App — Frontend</title>
+    <style>
+      :root {
+        --bg: #0f1724;
+        --card: #0b1220;
+        --muted: #93a3b8;
+        --accent: #4f46e5;
+        --success: #10b981;
+        --danger: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI,
+          Roboto, "Helvetica Neue", Arial;
+        background: linear-gradient(180deg, #071028 0%, #0b1220 100%);
+        color: #e6eef8;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+      }
+      .wrap {
+        width: 980px;
+        max-width: 96%;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0;
+      }
+      small {
+        color: var(--muted);
+      }
+      .card {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(0, 0, 0, 0.02)
+        );
+        padding: 18px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(4, 6, 12, 0.6);
+      }
+      form {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="tel"] {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 10px 12px;
+        border-radius: 8px;
+        color: inherit;
+        min-width: 160px;
+      }
+      button {
+        background: var(--accent);
+        border: none;
+        color: white;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 16px;
+      }
+      ul.list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 520px;
+        overflow: auto;
+      }
+      li.item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(0, 0, 0, 0.02)
+        );
+      }
+      .meta {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .name {
+        font-weight: 600;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .actions button {
+        margin-left: 8px;
+      }
+      .notice {
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .notice.ok {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--success);
+      }
+      .notice.err {
+        background: rgba(239, 68, 68, 0.08);
+        color: var(--danger);
+      }
+      footer {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 800px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>Contacts App</h1>
+          <small
+            >Basit CRUD + fetch örneği — aynı origin'de çalışan Express API ile
+            kullanılmak üzere</small
+          >
+        </div>
+        <div>
+          <form method="POST" action="/go-contacts">
+            <button type="submit">go api</button>
+          </form>
+          <button id="refreshBtn" class="secondary">Yenile</button>
+        </div>
+      </header>
+
+      <div class="card grid">
+        <section>
+          <div id="message" aria-live="polite"></div>
+          <ul id="contactsList" class="list"></ul>
+        </section>
+
+        <aside>
+          <h3 style="margin-top: 0">Yeni Kişi Ekle</h3>
+          <form id="addForm" class="card" autocomplete="off">
+            <input id="name" type="text" placeholder="İsim" required />
+            <input id="email" type="email" placeholder="E-posta" required />
+            <input id="phone" type="tel" placeholder="Telefon" />
+            <div style="display: flex; gap: 8px; margin-top: 8px">
+              <button type="submit">Ekle</button>
+              <button type="button" id="clearBtn" class="secondary">
+                Temizle
+              </button>
+            </div>
+          </form>
+        </aside>
+      </div>
+    </div>
+
+    <script>
+      const api = "/contacts"; // Express ile aynı origin'de çalışıyorsan bu yeterli
+      const listEl = document.getElementById("contactsList");
+      const msgEl = document.getElementById("message");
+      const addForm = document.getElementById("addForm");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const clearBtn = document.getElementById("clearBtn");
+
+      function showMsg(text, type = "ok") {
+        msgEl.innerHTML = `<div class="notice ${
+          type === "ok" ? "ok" : "err"
+        }">${text}</div>`;
+        setTimeout(() => {
+          if (msgEl.firstChild) msgEl.removeChild(msgEl.firstChild);
+        }, 3500);
+      }
+
+      async function getContacts() {
+        try {
+          const res = await fetch(api);
+          if (!res.ok) throw new Error("Sunucudan liste alınamadı");
+          const data = await res.json();
+          renderList(data);
+        } catch (err) {
+          showMsg(err.message, "err");
+        }
+      }
+
+      function createItem(contact) {
+        const li = document.createElement("li");
+        li.className = "item";
+        li.innerHTML = `
+        <div class="meta">
+          <div>
+            <div class="name">${escapeHtml(contact.name)}</div>
+            <div class="sub">${escapeHtml(contact.email)} • ${escapeHtml(
+          contact.phone || ""
+        )}</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="secondary" data-action="edit" data-id="${
+            contact.id
+          }">Düzenle</button>
+          <button data-action="delete" data-id="${contact.id}">Sil</button>
+        </div>
+      `;
+        return li;
+      }
+
+      function renderList(items) {
+        listEl.innerHTML = "";
+        if (!items || items.length === 0) {
+          listEl.innerHTML =
+            '<li class="item"><div class="sub">Kayıt bulunamadı</div></li>';
+          return;
+        }
+        items.forEach((c) => listEl.appendChild(createItem(c)));
+      }
+
+      // Basit XSS koruması
+      function escapeHtml(str) {
+        if (!str && str !== 0) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      // Add
+      addForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        try {
+          const res = await fetch(api, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, phone }),
+          });
+          if (!res.ok) throw new Error("Ekleme sırasında hata");
+          const created = await res.json();
+          showMsg("Kişi eklendi");
+          addForm.reset();
+          getContacts();
+        } catch (err) {
+          showMsg(err.message, "err");
+        }
+      });
+
+      // Delegation for edit/delete
+      listEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (action === "delete") {
+          if (!confirm("Bu kişiyi silmek istediğinizden emin misiniz?")) return;
+          try {
+            const res = await fetch(`${api}/${id}`, { method: "DELETE" });
+            if (res.status === 404) throw new Error("Kişi bulunamadı");
+            if (!res.ok && res.status !== 204)
+              throw new Error("Silme başarısız");
+            showMsg("Kişi silindi");
+            getContacts();
+          } catch (err) {
+            showMsg(err.message, "err");
+          }
+        }
+        if (action === "edit") {
+          // basit prompt tabanlı düzenleme (hızlı demo) — daha sonra modal/inline yapılabilir
+          try {
+            // fetch existing contact to prefill
+            const res0 = await fetch(api);
+            const all = await res0.json();
+            const contact = all.find((c) => String(c.id) === String(id));
+            if (!contact) throw new Error("Kişi bulunamadı");
+
+            const newName = prompt("Yeni isim:", contact.name);
+            if (newName === null) return; // kullanıcı iptal
+            const newEmail = prompt("Yeni e-posta:", contact.email);
+            if (newEmail === null) return;
+            const newPhone = prompt("Yeni telefon:", contact.phone || "");
+            if (newPhone === null) return;
+
+            const res = await fetch(`${api}/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: newName.trim(),
+                email: newEmail.trim(),
+                phone: newPhone.trim(),
+              }),
+            });
+            if (res.status === 404) throw new Error("Kayıt bulunamadı");
+            if (!res.ok) throw new Error("Güncelleme başarısız");
+            const updated = await res.json();
+            showMsg("Kişi güncellendi");
+            getContacts();
+          } catch (err) {
+            showMsg(err.message, "err");
+          }
+        }
+      });
+
+      refreshBtn.addEventListener("click", getContacts);
+      clearBtn.addEventListener("click", () => addForm.reset());
+
+      // İlk yükleme
+      getContacts();
+    </script>
+  </body>
+</html>
