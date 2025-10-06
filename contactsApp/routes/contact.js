@@ -16,10 +16,12 @@ router.get("/contacts", (req, res) => {
 router.post("/contacts", (req, res) => {
   const newContact = { id: contacts.length + 1, ...req.body }; //date.now() func'ı yerine length+1 kullanmak daha mantıklı
   const index = contacts.findIndex((item) => item.id === newContact.id);
-  if (index !== -1)
-    return res
-      .status(400)
-      .json({ error: "Contact with this ID already exists" });
+  if (
+    index !== -1 ||
+    contacts.findIndex((item) => item.email === newContact.email) !== -1
+  )
+    return res.status(400).json({ error: "This Contact already exists" });
+
   contacts.push(newContact);
   console.log("Contact added");
   res.status(201).json(newContact); //oluşturulan yeni objeyi döndür
